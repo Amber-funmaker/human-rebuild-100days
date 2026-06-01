@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>26岁人类修技</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --rose: #d4967e;
+            --rose-light: #e8c4b8;
+            --gold: #c9a96e;
+            --gold-light: #e8d4a8;
+            --cream: #f5ede4;
+            --ink: #3d2b2b;
+            --soft: #8a6a62;
+            --bg: #f7f0e8;
+            --parchment: #ede3d6;
+        }
+        body {
+            font-family: "PingFang SC", "Microsoft YaHei", "STKaiti", serif;
+            background: var(--bg);
+            color: var(--ink);
+            min-height: 100vh;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: 
+                url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E"),
+                linear-gradient(135deg, rgba(212,150,126,0.06) 0%, rgba(201,169,110,0.04) 50%, rgba(232,196,184,0.08) 100%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* 页眉 */
+        .ornate-header { text-align: center; padding: 30px 20px 24px; }
+        .ornate-divider { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 16px; }
+        .ornate-line { width: 50px; height: 1px; background: linear-gradient(90deg, transparent, var(--gold), transparent); }
+        .ornate-symbol { font-size: 14px; color: var(--gold); }
+        .main-title { font-size: 30px; font-weight: 400; letter-spacing: 5px; color: var(--ink); font-family: "STKaiti", serif; margin-bottom: 4px; }
+        .subtitle { font-size: 11px; letter-spacing: 3px; color: var(--soft); font-style: italic; }
+
+        /* 阶段横幅 */
+        .scroll-banner {
+            max-width: 480px; margin: 0 auto 20px; padding: 18px 28px;
+            background: var(--parchment); border: 1px solid rgba(201,169,110,0.3);
+            border-radius: 4px; position: relative;
+            box-shadow: 0 3px 16px rgba(61,43,43,0.06);
+            text-align: center; cursor: pointer;
+        }
+        .scroll-banner::before, .scroll-banner::after { content: '❧'; position: absolute; top: 50%; transform: translateY(-50%); font-size: 16px; color: var(--gold); opacity: 0.4; }
+        .scroll-banner::before { left: 8px; }
+        .scroll-banner::after { right: 8px; transform: translateY(-50%) scaleX(-1); }
+        .era-label { font-size: 9px; letter-spacing: 3px; color: var(--gold); text-transform: uppercase; margin-bottom: 6px; }
+        .phase-title { font-size: 20px; font-weight: 400; color: var(--ink); font-family: "STKaiti", serif; }
+        .scroll-quote { font-size: 10px; color: var(--soft); font-style: italic; margin-top: 6px; }
+
+        /* 进度 */
+        .progress-wrap { max-width: 480px; margin: 0 auto 20px; padding: 0 20px; }
+        .progress-meta { display: flex; justify-content: space-between; font-size: 10px; color: var(--soft); margin-bottom: 5px; }
+        .progress-track { height: 3px; background: rgba(201,169,110,0.15); border-radius: 2px; overflow: hidden; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, var(--rose), var(--gold)); border-radius: 2px; transition: width 0.5s; }
+
+        /* 导航tab */
+        .nav-tabs {
+            display: flex; justify-content: center; gap: 4px;
+            max-width: 480px; margin: 0 auto 20px; padding: 0 20px;
+        }
+        .nav-tab {
+            padding: 8px 16px; border-radius: 20px; font-size: 11px;
+            background: var(--parchment); border: 1px solid rgba(201,169,110,0.2);
+            color: var(--soft); cursor: pointer; transition: all 0.2s;
+        }
+        .nav-tab.active {
+            background: var(--rose); color: white; border-color: var(--rose);
+        }
+
+        /* 内容区 */
+        .content { max-width: 480px; margin: 0 auto; padding: 0 16px 80px; }
+
+        /* ===== 日历 ===== */
+        .calendar-legend { display: flex; justify-content: center; gap: 16px; margin-bottom: 10px; font-size: 10px; color: #b0a090; }
+        .legend-item { display: flex; align-items: center; gap: 4px; }
+        .legend-dot { width: 7px; height: 7px; border-radius: 2px; }
+        .legend-dot.done { background: var(--rose); }
+        .legend-dot.today { border: 1.5px solid var(--gold); background: transparent; }
+        .legend-dot.future { background: rgba(201,169,110,0.08); }
+        .calendar-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; }
+        .day-cell {
+            aspect-ratio: 1; border-radius: 5px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: all 0.2s;
+            background: rgba(201,169,110,0.06);
+            border: 1px solid rgba(201,169,110,0.1);
+        }
+        .day-cell:hover:not(.locked) { transform: scale(1.1); box-shadow: 0 3px 10px rgba(61,43,43,0.1); }
+        .day-cell.locked { opacity: 0.3; cursor: default; }
+        .day-cell.done { background: linear-gradient(145deg, var(--rose-light), var(--rose)); border-color: var(--rose); }
+        .day-cell.today { border: 1.5px solid var(--gold); background: rgba(232,212,168,0.12); }
+        .day-num { font-size: 9px; color: var(--soft); font-style: italic; }
+        .day-cell.done .day-num, .day-cell.today .day-num { color: white; font-weight: 500; }
+        .day-cell.today .day-num { color: var(--gold); }
+
+        /* ===== 技能卡片 ===== */
+        .skill-cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        .skill-card {
+            background: white; border-radius: 12px; padding: 16px;
+            border: 1px solid rgba(201,169,110,0.15);
+            transition: all 0.2s; cursor: pointer;
+        }
+        .skill-card:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(61,43,43,0.08); }
+        .skill-card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+        .skill-icon { font-size: 20px; }
+        .skill-name { font-size: 13px; font-weight: 600; color: var(--ink); }
+        .skill-level { font-size: 9px; color: var(--gold); letter-spacing: 1px; margin-left: auto; }
+        .skill-bar { height: 3px; background: rgba(201,169,110,0.15); border-radius: 2px; overflow: hidden; margin-bottom: 8px; }
+        .skill-fill { height: 100%; border-radius: 2px; transition: width 0.4s; }
+        .skill-goal { font-size: 10px; color: var(--soft); line-height: 1.5; }
+        .skill-reward { font-size: 10px; color: var(--gold); margin-top: 6px; }
+        .skill-card.locked { opacity: 0.5; }
+
+        /* ===== 目标清单 ===== */
+        .goals-section { margin-bottom: 24px; }
+        .goals-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+        .goals-icon { font-size: 18px; }
+        .goals-title { font-size: 14px; font-weight: 600; color: var(--ink); }
+        .goals-subtitle { font-size: 10px; color: var(--soft); margin-left: auto; }
+        .goal-item {
+            background: white; border-radius: 10px; padding: 14px 16px; margin-bottom: 10px;
+            border: 1px solid rgba(201,169,110,0.12); cursor: pointer;
+            transition: all 0.2s; display: flex; align-items: flex-start; gap: 12px;
+        }
+        .goal-item:hover { border-color: var(--gold); }
+        .goal-item.done { opacity: 0.6; background: rgba(201,169,110,0.03); }
+        .goal-check {
+            width: 20px; height: 20px; border-radius: 50%;
+            border: 1.5px solid rgba(201,169,110,0.3);
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; margin-top: 1px; font-size: 11px; color: white;
+            transition: all 0.2s;
+        }
+        .goal-item.done .goal-check { background: var(--rose); border-color: var(--rose); }
+        .goal-content { flex: 1; }
+        .goal-name { font-size: 13px; font-weight: 600; color: var(--ink); margin-bottom: 4px; }
+        .goal-desc { font-size: 11px; color: var(--soft); line-height: 1.5; }
+        .goal-output { font-size: 10px; color: var(--gold); margin-top: 6px; padding: 5px 10px; background: rgba(201,169,110,0.06); border-radius: 6px; display: inline-block; }
+        .goal-reward { font-size: 10px; color: var(--rose); margin-left: auto; white-space: nowrap; align-self: center; }
+
+        /* ===== 奖励区 ===== */
+        .rewards-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 20px; }
+        .reward-item {
+            background: white; border-radius: 12px; padding: 16px 12px;
+            text-align: center; border: 1px solid rgba(201,169,110,0.12);
+            transition: all 0.2s;
+        }
+        .reward-item.locked { opacity: 0.4; }
+        .reward-item.unlocked { border-color: var(--gold); background: rgba(201,169,110,0.05); }
+        .reward-item.earned { border-color: var(--rose); background: rgba(212,150,126,0.08); }
+        .reward-icon { font-size: 24px; margin-bottom: 8px; }
+        .reward-name { font-size: 11px; font-weight: 600; color: var(--ink); margin-bottom: 4px; }
+        .reward-condition { font-size: 9px; color: var(--soft); line-height: 1.4; }
+        .reward-status { font-size: 10px; margin-top: 6px; font-weight: 600; }
+        .reward-item.locked .reward-status { color: #b0a090; }
+        .reward-item.unlocked .reward-status { color: var(--gold); }
+        .reward-item.earned .reward-status { color: var(--rose); }
+
+        /* ===== 打卡表单 ===== */
+        .checkin-form { background: white; border-radius: 14px; padding: 18px; margin-bottom: 16px; border: 1px solid rgba(201,169,110,0.12); }
+        .checkin-title { font-size: 11px; letter-spacing: 2px; color: var(--gold); text-transform: uppercase; margin-bottom: 14px; }
+        .skill-toggles { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+        .skill-toggle {
+            padding: 5px 12px; border-radius: 16px; font-size: 11px;
+            background: var(--parchment); border: 1px solid rgba(201,169,110,0.2);
+            color: var(--soft); cursor: pointer; transition: all 0.2s;
+        }
+        .skill-toggle.active { background: var(--rose); color: white; border-color: var(--rose); }
+        .field { margin-bottom: 12px; }
+        .field label { display: block; font-size: 10px; color: var(--soft); letter-spacing: 1px; margin-bottom: 5px; }
+        .field input, .field textarea, .field select {
+            width: 100%; background: var(--parchment);
+            border: 1px solid rgba(201,169,110,0.2); border-radius: 8px;
+            padding: 10px 12px; color: var(--ink); font-size: 13px; font-family: inherit;
+            transition: border-color 0.2s;
+        }
+        .field input:focus, .field textarea:focus, .field select:focus { outline: none; border-color: var(--gold); }
+        .field textarea { resize: vertical; min-height: 70px; }
+        .btn {
+            width: 100%; padding: 13px; background: linear-gradient(135deg, #c97c8e, #d4967e);
+            border: none; border-radius: 10px; color: white;
+            font-size: 12px; font-weight: 500; letter-spacing: 2px; cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+        .btn:hover { transform: scale(1.02); box-shadow: 0 5px 16px rgba(201,124,142,0.25); }
+
+        /* ===== 弹窗 ===== */
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(61,43,43,0.45); z-index: 300; align-items: flex-end; justify-content: center; }
+        .modal-overlay.active { display: flex; }
+        .modal { background: var(--cream); border-radius: 20px 20px 0 0; padding: 22px 18px 50px; width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto; }
+        .modal-handle { width: 36px; height: 4px; background: #d4c4b4; border-radius: 2px; margin: 0 auto 18px; }
+        .modal-head { text-align: center; margin-bottom: 16px; }
+        .modal-day { font-size: 9px; letter-spacing: 3px; color: var(--gold); }
+        .modal-date { font-size: 16px; font-weight: 400; margin-top: 4px; }
+        .modal-phase { font-size: 10px; color: var(--soft); margin-top: 4px; font-style: italic; }
+        .modal-quote { font-size: 11px; color: var(--soft); font-style: italic; padding: 8px 14px; background: var(--parchment); border-radius: 8px; margin: 10px auto; max-width: 300px; text-align: center; }
+        .modal-close { position: absolute; top: 12px; right: 12px; width: 26px; height: 26px; border-radius: 50%; background: var(--parchment); border: 1px solid rgba(201,169,110,0.2); font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .report-card { background: white; border-radius: 10px; padding: 16px; margin-bottom: 12px; border: 1px solid rgba(201,169,110,0.12); }
+        .report-title { font-size: 10px; letter-spacing: 2px; color: var(--gold); margin-bottom: 10px; text-transform: uppercase; }
+        .report-row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid rgba(201,169,110,0.06); font-size: 12px; }
+        .report-row:last-child { border-bottom: none; }
+        .report-key { color: var(--soft); }
+        .report-val { font-weight: 600; color: var(--ink); }
+        .report-rest { font-size: 12px; color: #b0a090; font-style: italic; text-align: center; padding: 16px 0; }
+
+        /* ===== 技能卡弹窗 ===== */
+        .skill-card-modal {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.7); z-index: 400;
+            align-items: center; justify-content: center;
+            padding: 20px;
+        }
+        .skill-card-modal.active { display: flex; }
+        .skill-card-big {
+            background: linear-gradient(145deg, #3d2b2b, #5a4040);
+            border-radius: 20px; padding: 36px 28px;
+            max-width: 300px; width: 100%; text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+            animation: cardAppear 0.5s ease;
+        }
+        @keyframes cardAppear {
+            from { transform: scale(0.5) rotateY(90deg); opacity: 0; }
+            to { transform: scale(1) rotateY(0); opacity: 1; }
+        }
+        .skill-card-glow {
+            width: 80px; height: 80px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--rose), var(--gold));
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 20px; font-size: 36px;
+            box-shadow: 0 0 30px rgba(212,150,126,0.4);
+        }
+        .skill-card-title { font-size: 18px; font-weight: 600; color: white; margin-bottom: 6px; }
+        .skill-card-sub { font-size: 11px; color: rgba(255,255,255,0.6); margin-bottom: 16px; letter-spacing: 2px; }
+        .skill-card-desc { font-size: 13px; color: rgba(255,255,255,0.8); line-height: 1.7; margin-bottom: 20px; }
+        .skill-card-date { font-size: 10px; color: var(--gold); letter-spacing: 2px; }
+        .skill-card-close { margin-top: 20px; padding: 12px 28px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2); border-radius: 20px; color: white; font-size: 12px; cursor: pointer; transition: all 0.2s; }
+        .skill-card-close:hover { background: rgba(255,255,255,0.25); }
+
+        /* ===== 奖励弹窗 ===== */
+        .reward-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 400; align-items: center; justify-content: center; padding: 20px; }
+        .reward-modal.active { display: flex; }
+        .reward-big {
+            background: linear-gradient(145deg, #3d2b2b, #5a4040);
+            border-radius: 20px; padding: 40px 30px;
+            max-width: 300px; width: 100%; text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+            animation: cardAppear 0.5s ease;
+        }
+        .reward-icon-big { font-size: 60px; margin-bottom: 16px; }
+        .reward-title-big { font-size: 20px; font-weight: 600; color: white; margin-bottom: 8px; }
+        .reward-desc-big { font-size: 13px; color: rgba(255,255,255,0.7); line-height: 1.6; margin-bottom: 16px; }
+        .reward-unlocked-label { font-size: 11px; color: var(--gold); letter-spacing: 2px; }
+        .reward-close { margin-top: 20px; padding: 12px 28px; background: var(--rose); border: none; border-radius: 20px; color: white; font-size: 12px; cursor: pointer; }
+
+        /* 四维卡片 */
+        .dims { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        .dim-card {
+            background: var(--parchment); border: 1px solid rgba(201,169,110,0.2);
+            border-radius: 8px; padding: 16px; cursor: pointer;
+            transition: all 0.2s; position: relative;
+        }
+        .dim-card:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(61,43,43,0.08); border-color: var(--gold); }
+        .dim-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; border-radius: 8px 8px 0 0; }
+        .dim-card.mind::before { background: linear-gradient(90deg, #c97c8e, #e8a0b4); }
+        .dim-card.skill::before { background: linear-gradient(90deg, #9b8a7a, #d4a574); }
+        .dim-card.body::before { background: linear-gradient(90deg, #8a9a7a, #a8b89a); }
+        .dim-card.rel::before { background: linear-gradient(90deg, #c9a0b4, #d4a0c0); }
+        .dim-icon { font-size: 20px; margin-bottom: 6px; }
+        .dim-name { font-size: 12px; font-weight: 600; color: var(--ink); margin-bottom: 3px; }
+        .dim-count { font-size: 9px; color: var(--soft); letter-spacing: 1px; }
+
+        @media (max-width: 480px) {
+            .main-title { font-size: 24px; }
+            .skill-cards { grid-template-columns: 1fr 1fr; gap: 8px; }
+            .rewards-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <div class="ornate-header">
+        <div class="ornate-divider"><span class="ornate-line"></span><span class="ornate-symbol">✿</span><span class="ornate-line"></span></div>
+        <div class="main-title">二十六岁</div>
+        <div class="subtitle">CARRIE · 一百天重建自我</div>
+    </div>
+
+    <!-- 阶段横幅 -->
+    <div class="scroll-banner" onclick="switchTab('goals')">
+        <div class="era-label" id="phaseEra">ERA 01 / 10</div>
+        <div class="phase-title" id="phaseName">认识自我</div>
+        <div class="scroll-quote" id="phaseQuote">"认识你自己"——德尔斐神庙上的箴言</div>
+    </div>
+
+    <!-- 进度 -->
+    <div class="progress-wrap">
+        <div class="progress-meta">
+            <span id="dayLabel">第 1 天</span>
+            <span id="pctLabel">1%</span>
+        </div>
+        <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:1%"></div></div>
+    </div>
+
+    <!-- 导航tab -->
+    <div class="nav-tabs">
+        <div class="nav-tab active" data-tab="calendar" onclick="switchTab('calendar')">📅 日历</div>
+        <div class="nav-tab" data-tab="skills" onclick="switchTab('skills')">⚡ 技能</div>
+        <div class="nav-tab" data-tab="goals" onclick="switchTab('goals')">🎯 目标</div>
+        <div class="nav-tab" data-tab="rewards" onclick="switchTab('rewards')">🎁 奖励</div>
+    </div>
+
+    <!-- 内容区 -->
+    <div class="content" id="contentArea"></div>
+
+    <!-- 日期弹窗 -->
+    <div class="modal-overlay" id="dayModal">
+        <div class="modal">
+            <div class="modal-handle"></div>
+            <div class="modal-close" onclick="closeModal()">×</div>
+            <div class="modal-head">
+                <div class="modal-day" id="modalDay">DAY 1</div>
+                <div class="modal-date" id="modalDate">2026年6月1日</div>
+                <div class="modal-phase" id="modalPhase">认识自我 · ERA 01</div>
+            </div>
+            <div class="modal-quote" id="modalQuote">"I love me more."</div>
+            <div id="reportArea"></div>
+            <div id="modalCheckinArea"></div>
+        </div>
+    </div>
+
+    <!-- 技能卡弹窗 -->
+    <div class="skill-card-modal" id="skillCardModal">
+        <div class="skill-card-big">
+            <div class="skill-card-glow" id="skillCardIcon">🤖</div>
+            <div class="skill-card-title" id="skillCardTitle">AI工具链</div>
+            <div class="skill-card-sub">LEVEL 1</div>
+            <div class="skill-card-desc" id="skillCardDesc">你已经掌握了AI写作和提示词工程的基础能力</div>
+            <div class="skill-card-date" id="skillCardDate">2026.06.15 解锁</div>
+            <button class="skill-card-close" onclick="closeSkillCard()">继续前行 ✿</button>
+        </div>
+    </div>
+
+    <!-- 奖励弹窗 -->
+    <div class="reward-modal" id="rewardModal">
+        <div class="reward-big">
+            <div class="reward-icon-big" id="rewardBigIcon">🍷</div>
+            <div class="reward-title-big" id="rewardBigTitle">一瓶酒</div>
+            <div class="reward-desc-big" id="rewardBigDesc">完成了Week 1-2的学习，奖励自己一瓶酒！</div>
+            <div class="reward-unlocked-label">🎉 已解锁</div>
+            <button class="reward-close" onclick="closeRewardModal()">收下这份奖励 ✿</button>
+        </div>
+    </div>
+
+    <script>
+    // ===== 数据定义 =====
+    const CARRIE_QUOTES = [
+        "I love me more.", "The most exciting relationship is the one you have with yourself.",
+        "I am someone who is individual.", "Perhaps growing up means learning to let go.",
+        "Maybe some women aren't meant to be figured out.", "Life isn't about finding yourself.",
+        "I am who I am.", "The single greatest thing you can do for yourself is to evolve.",
+        "I will not be a museum piece.", "I can do anything.", "I am enough.",
+        "I choose myself.", "I will be brave.", "I will be honest.", "I will be myself.",
+        "We deserve more than ordinary.", "There must be something more.", "I believe in me.",
+        "I will not settle.", "I will not go quietly.", "There is no right answer.",
+        "I want to feel alive.", "I'm figuring it out.", "I will find my way.",
+        "I will speak my truth.", "I will own my story.", "I will trust my gut.",
+        "I will follow my heart.", "I will not dim my light.", "I will not lose myself.",
+        "I will enjoy the journey.", "I will be kind to myself.", "I will celebrate myself.",
+        "I will protect my peace.", "I will honor my growth.", "I will trust the timing.",
+        "It's okay to be scared.", "It's okay to be different.", "It's okay to be imperfect.",
+        "It's okay to start over.", "It's okay to say no.", "It's okay to ask for help.",
+        "We're made of contradictions, that's the point.", "I'm learning to be patient.",
+        "I'm learning to be kind.", "I'm learning to be free.", "I'm learning to be me.",
+        "I think the key is not to be afraid of anything.", "There are still things I haven't figured out.",
+        "I am not one thing.", "I want a miracle.", "I am capable of handling whatever comes."
+    ];
+
+    const PHASES = [
+        { start:1, title:'认识自我', era:'ERA 01/10', quote:'"认识你自己"——德尔斐神庙上的箴言', c1:'#c97c8e', c2:'#e8a0b4' },
+        { start:11, title:'技术人格', era:'ERA 02/10', quote:'专注、极致、稀缺——技术人格的三块基石', c1:'#9b8a7a', c2:'#d4a574' },
+        { start:21, title:'观察世界', era:'ERA 03/10', quote:'不是世界是什么，而是为什么是这样', c1:'#8a9a7a', c2:'#a8b89a' },
+        { start:31, title:'理解他人', era:'ERA 04/10', quote:'真正的共情，是愿意进入对方的世界', c1:'#b09080', c2:'#d0b0a0' },
+        { start:41, title:'身体觉醒', era:'ERA 05/10', quote:'你多久没有感受到身体的存在了？', c1:'#8aaa8a', c2:'#aacaaa' },
+        { start:51, title:'关系修炼', era:'ERA 06/10', quote:'所有外在关系都是内在关系的投射', c1:'#c9a0b4', c2:'#e8b0d0' },
+        { start:61, title:'创造表达', era:'ERA 07/10', quote:'你不需要很厉害才开始', c1:'#a090b0', c2:'#c0b0d0' },
+        { start:71, title:'系统思维', era:'ERA 08/10', quote:'高手看结构，普通人看现象', c1:'#8090a0', c2:'#a0b0c0' },
+        { start:81, title:'价值创造', era:'ERA 09/10', quote:'为谁创造价值，决定了你值多少', c1:'#c08080', c2:'#e0a0a0' },
+        { start:91, title:'自由之路', era:'ERA 10/10', quote:'真正的自由，是有能力选择，也有勇气承担', c1:'#d4a574', c2:'#e8c0a0' }
+    ];
+
+    const SKILLS = [
+        { id:'ai', name:'AI工具链', icon:'🤖', color:'#c97c8e', days:'1-25', desc:'用AI替代一个小型团队' },
+        { id:'data', name:'数据分析', icon:'📊', color:'#8090a0', days:'26-50', desc:'用数据证明你的决策是对的' },
+        { id:'content', name:'内容创作', icon:'✍️', color:'#a090b0', days:'51-75', desc:'线下活动→线上内容的完整闭环' },
+        { id:'visual', name:'视觉设计', icon:'🎨', color:'#c08080', days:'76-100', desc:'一个人也能做出专业级视觉' }
+    ];
+
+    const GOALS = [
+        // AI工具链
+        { id:'g1', skill:'ai', name:'AI提示词工程基础', desc:'学习结构化提示词：角色法/框架法/例子法', output:'📤 AI辅助策划案初稿', reward:'🍷 一瓶酒', days:'1-14' },
+        { id:'g2', skill:'ai', name:'AI视觉生成入门', desc:'掌握Midjourney/可灵/liblib，用AI生成活动主视觉', output:'📤 品牌活动视觉素材包', reward:'💆 一次按摩', days:'15-25' },
+        // 数据分析
+        { id:'g3', skill:'data', name:'数据采集与整理', desc:'Excel高级函数 + 基础SQL，从0搭建活动数据仪表盘', output:'📤 活动数据仪表盘', reward:'🎬 看一场电影', days:'26-35' },
+        { id:'g4', skill:'data', name:'数据分析思维', desc:'用户旅程数据拆解、转化漏斗、ROI计算', output:'📤 活动复盘数据分析报告', reward:'🛁 泡个澡', days:'36-47' },
+        { id:'g5', skill:'data', name:'数据驱动决策', desc:'从数据到洞察，从洞察到下次活动优化方向', output:'📤 数据驱动的活动优化方案', reward:'🛍️ 买一样想要的东西', days:'48-50' },
+        // 内容创作
+        { id:'g6', skill:'content', name:'内容生产SOP', desc:'活动预热/现场/复盘的内容生产SOP', output:'📤 活动内容生产模板', reward:'🍷 一瓶酒', days:'51-58' },
+        { id:'g7', skill:'content', name:'传播链路设计', desc:'设计3条完整传播链路（小红书/抖音/微信）', output:'📤 线上反哺方案', reward:'🌅 出去玩一天', days:'59-68' },
+        { id:'g8', skill:'content', name:'KOL/UGC思维', desc:'如何让参与者变成传播者', output:'📤 "参与者即传播者"方案', reward:'💆 一次按摩', days:'69-75' },
+        // 视觉设计
+        { id:'g9', skill:'visual', name:'设计基础', desc:'版式/色彩/字体/品牌视觉逻辑', output:'📤 个人视觉风格指南', reward:'🛁 泡个澡', days:'76-85' },
+        { id:'g10', skill:'visual', name:'Canva+AI设计', desc:'快速出图工作流', output:'📤 品牌活动视觉模板包', reward:'🎬 看一场电影', days:'86-93' },
+        { id:'g11', skill:'visual', name:'整合输出', desc:'整理前13周所有输出，做成"超级个体技术手册"', output:'📤 完整作品集', reward:'🏆 三个月完整通关', days:'94-100' }
+    ];
+
+    const REWARDS = [
+        { id:'r1', icon:'🍷', name:'一瓶酒', condition:'完成AI工具链 Week 1', conditionDesc:'Week 1 完成' },
+        { id:'r2', icon:'💆', name:'一次按摩', condition:'完成AI工具链 Week 2', conditionDesc:'Week 2 完成' },
+        { id:'r3', icon:'🎬', name:'一场电影', condition:'完成数据分析 Week 5', conditionDesc:'Week 5 完成' },
+        { id:'r4', icon:'🛁', name:'泡个澡', condition:'完成数据分析 Week 6', conditionDesc:'Week 6-7 完成' },
+        { id:'r5', icon:'🛍️', name:'买想要的东西', condition:'完成数据分析 Week 8', conditionDesc:'Week 8 完成' },
+        { id:'r6', icon:'🌅', name:'出去玩一天', condition:'完成内容创作 Week 10', conditionDesc:'Week 10 完成' },
+        { id:'r7', icon:'💆', name:'一次按摩', condition:'完成内容创作 Week 11', conditionDesc:'Week 11 完成' },
+        { id:'r8', icon:'🛁', name:'泡个澡', condition:'完成视觉设计 Week 12', conditionDesc:'Week 12 完成' },
+        { id:'r9', icon:'🎬', name:'一场电影', condition:'完成视觉设计 Week 13', conditionDesc:'Week 13 完成' },
+        { id:'r10', icon:'🏆', name:'完整通关', condition:'完成全部100天', conditionDesc:'100天 完成' }
+    ];
+
+    const STORAGE_KEY = '***';
+    const START = new Date('2026-06-01');
+
+    function getDay() {
+        return Math.max(1, Math.floor((new Date() - START) / 86400000) + 1);
+    }
+
+    function getPhaseIdx(day) {
+        for (let i = PHASES.length - 1; i >= 0; i--) {
+            if (day >= PHASES[i].start) return i;
+        }
+        return 0;
+    }
+
+    function getPhase(day) { return PHASES[getPhaseIdx(day)]; }
+
+    function load() {
+        const s = localStorage.getItem(STORAGE_KEY);
+        if (s) return JSON.parse(s);
+        return {
+            days: {}, skills: {}, goals: {}, rewards: {}, rels: [],
+            body: { weights:[], trainings:[], tongues:[] }
+        };
+    }
+
+    function save(d) { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); }
+    function fmt() { return new Date().toLocaleString('zh-CN', { month:'short', day:'numeric', hour:'2-digit', min:'2-digit' }); }
+
+    let currentTab = 'calendar';
+
+    function switchTab(tab) {
+        currentTab = tab;
+        document.querySelectorAll('.nav-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+        renderContent();
+    }
+
+    function renderContent() {
+        const d = load();
+        const day = getDay();
+        const phase = getPhase(day);
+
+        document.getElementById('phaseEra').textContent = phase.era;
+        document.getElementById('phaseName').textContent = phase.title;
+        document.getElementById('phaseQuote').textContent = phase.quote;
+        document.getElementById('dayLabel').textContent = `第 ${day} 天`;
+        document.getElementById('pctLabel').textContent = `${day}%`;
+        document.getElementById('progressFill').style.width = `${day}%`;
+
+        const area = document.getElementById('contentArea');
+
+        if (currentTab === 'calendar') {
+            area.innerHTML = `
+                <div class="calendar-legend">
+                    <div class="legend-item"><div class="legend-dot done"></div><span>已打卡</span></div>
+                    <div class="legend-item"><div class="legend-dot today"></div><span>今天</span></div>
+                    <div class="legend-item"><div class="legend-dot future"></div><span>未开始</span></div>
+                </div>
+                <div class="calendar-grid">${renderCalendarGrid(day, d)}</div>
+                <div class="checkin-form" style="margin-top:20px;">
+                    <div class="checkin-title">✿ 今日打卡</div>
+                    <div class="skill-toggles">
+                        ${SKILLS.map(s => `<span class="skill-toggle" data-skill="${s.id}" onclick="this.classList.toggle('active')">${s.icon} ${s.name}</span>`).join('')}
+                    </div>
+                    <div class="field">
+                        <label>体重 kg</label>
+                        <input type="number" id="quickWeight" placeholder="可选" step="0.1">
+                    </div>
+                    <div class="field">
+                        <label>训练 / 日记</label>
+                        <select id="quickTrain">
+                            <option value="">今天做了什么？</option>
+                            <option value="功能性训练">功能性训练</option>
+                            <option value="拉伸/柔韧性">拉伸/柔韧性</option>
+                            <option value="呼吸训练">呼吸训练</option>
+                            <option value="核心激活">核心激活</option>
+                            <option value="康复训练">康复训练</option>
+                            <option value="体能训练">体能训练</option>
+                            <option value="休息日">休息日</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <textarea id="quickNote" placeholder="今天发生了什么？（可选）" style="min-height:60px;"></textarea>
+                    </div>
+                    <button class="btn" onclick="submitToday()">✿ 打卡今天</button>
+                </div>
+                <div class="dims" style="margin-top:16px;">
+                    <div class="dim-card mind" onclick="switchTab('goals')"><div class="dim-icon">🧠</div><div class="dim-name">心智</div><div class="dim-count">思考记录</div></div>
+                    <div class="dim-card rel" onclick="openRelPanel()"><div class="dim-icon">🌏</div><div class="dim-name">我的世界</div><div class="dim-count">${d.rels.length} 条</div></div>
+                    <div class="dim-card body"><div class="dim-icon">💪</div><div class="dim-name">体魄</div><div class="dim-count">${d.body.weights.length} 条体重</div></div>
+                    <div class="dim-card skill" onclick="switchTab('skills')"><div class="dim-icon">⚡</div><div class="dim-name">技能链</div><div class="dim-count">查看进度</div></div>
+                </div>
+            `;
+        } else if (currentTab === 'skills') {
+            area.innerHTML = `
+                <div class="skill-cards">
+                    ${SKILLS.map(s => {
+                        const skillProgress = d.skills[s.id] || 0;
+                        const goalsOfSkill = GOALS.filter(g => g.skill === s.id);
+                        const completedGoals = goalsOfSkill.filter(g => d.goals[g.id]).length;
+                        const isLocked = day < parseInt(s.days.split('-')[0]);
+                        return `
+                        <div class="skill-card ${isLocked ? 'locked' : ''}" onclick="showSkillDetail('${s.id}')">
+                            <div class="skill-card-header">
+                                <span class="skill-icon">${s.icon}</span>
+                                <span class="skill-name">${s.name}</span>
+                                <span class="skill-level">${completedGoals}/${goalsOfSkill.length} 目标</span>
+                            </div>
+                            <div class="skill-bar"><div class="skill-fill" style="width:${skillProgress}%;background:linear-gradient(90deg,${s.color},${s.color}88)"></div></div>
+                            <div class="skill-goal">${s.desc}</div>
+                            <div class="skill-reward">📅 ${s.days} 天</div>
+                        </div>`;
+                    }).join('')}
+                </div>
+            `;
+        } else if (currentTab === 'goals') {
+            const goalsHTML = GOALS.map(g => {
+                const isDone = d.goals[g.id];
+                return `
+                <div class="goal-item ${isDone ? 'done' : ''}" onclick="toggleGoal('${g.id}')">
+                    <div class="goal-check">${isDone ? '✓' : ''}</div>
+                    <div class="goal-content">
+                        <div class="goal-name">${g.name}</div>
+                        <div class="goal-desc">${g.desc}</div>
+                        <div class="goal-output">${g.output}</div>
+                    </div>
+                    <div class="goal-reward">${g.reward}</div>
+                </div>`;
+            }).join('');
+            area.innerHTML = `
+                <div class="goals-section">
+                    <div class="goals-header">
+                        <span class="goals-icon">🎯</span>
+                        <span class="goals-title">学习目标清单</span>
+                        <span class="goals-subtitle">${GOALS.filter(g => d.goals[g.id]).length}/${GOALS.length} 已完成</span>
+                    </div>
+                    ${goalsHTML}
+                </div>
+            `;
+        } else if (currentTab === 'rewards') {
+            const rewardsHTML = REWARDS.map(r => {
+                let status = 'locked';
+                if (d.rewards[r.id]) status = 'earned';
+                else if (checkRewardEarned(r.id, d)) status = 'unlocked';
+                return `
+                <div class="reward-item ${status}" onclick="${status === 'unlocked' ? `earnReward('${r.id}')` : ''}">
+                    <div class="reward-icon">${r.icon}</div>
+                    <div class="reward-name">${r.name}</div>
+                    <div class="reward-condition">${r.conditionDesc}</div>
+                    <div class="reward-status">${{ locked:'🔒 未解锁', unlocked:'✨ 可领取', earned:'🎉 已获得' }[status]}</div>
+                </div>`;
+            }).join('');
+            area.innerHTML = `
+                <div class="goals-header">
+                    <span class="goals-icon">🎁</span>
+                    <span class="goals-title">奖励清单</span>
+                    <span class="goals-subtitle">${d.rewards ? Object.values(d.rewards).filter(Boolean).length : 0}/${REWARDS.length} 已获得</span>
+                </div>
+                <div class="rewards-grid">${rewardsHTML}</div>
+            `;
+        }
+    }
+
+    function renderCalendarGrid(today, d) {
+        let html = '';
+        for (let i = 1; i <= 100; i++) {
+            const isDone = d.days[i] !== undefined;
+            const isToday = i === today;
+            const isFuture = i > today;
+            let cls = '';
+            if (isDone) cls = 'done';
+            else if (isToday) cls = 'today';
+            else if (isFuture) cls = 'locked';
+            html += `<div class="day-cell ${cls}" onclick="openDay(${i})"><span class="day-num">${i}</span></div>`;
+        }
+        return html;
+    }
+
+    function openDay(n) {
+        if (n > getDay()) return;
+        const phase = getPhase(n);
+        const d = load();
+        const dayData = d.days[n] || {};
+        const quote = CARRIE_QUOTES[(n - 1) % CARRIE_QUOTES.length];
+        const date = new Date(START); date.setDate(date.getDate() + n - 1);
+        const dateStr = date.toLocaleDateString('zh-CN', { month:'long', day:'numeric', year:'numeric' });
+
+        document.getElementById('modalDay').textContent = `DAY ${n}`;
+        document.getElementById('modalDate').textContent = dateStr;
+        document.getElementById('modalPhase').textContent = `${phase.title} · ${phase.era}`;
+        document.getElementById('modalQuote').textContent = `"${quote}"`;
+
+        let reportHTML = '';
+        if (dayData.skills && Object.keys(dayData.skills).length > 0) {
+            reportHTML += `<div class="report-card"><div class="report-title">📋 成绩单</div>`;
+            for (const [skillId, val] of Object.entries(dayData.skills)) {
+                const skill = SKILLS.find(s => s.id === skillId);
+                if (skill && val > 0) reportHTML += `<div class="report-row"><span class="report-key">${skill.icon} ${skill.name}</span><span class="report-val">+${val}%</span></div>`;
+            }
+            reportHTML += `</div>`;
+        }
+        if (dayData.body) {
+            if (dayData.body.weight) {
+                reportHTML += `<div class="report-card"><div class="report-title">💪 体魄</div><div class="report-row"><span class="report-key">体重</span><span class="report-val">${dayData.body.weight}kg</span></div>${dayData.body.train ? `<div class="report-row"><span class="report-key">训练</span><span class="report-val">${dayData.body.train}</span></div>` : ''}</div>`;
+            }
+        }
+        if (dayData.note) {
+            reportHTML += `<div class="report-card"><div class="report-title">📝 日记</div><div class="report-row" style="display:block"><span class="report-key" style="font-size:12px;color:var(--ink)">${dayData.note}</span></div></div>`;
+        }
+        if (!reportHTML) reportHTML = `<div class="report-rest">还没有在这一天打卡 ❧</div>`;
+
+        document.getElementById('reportArea').innerHTML = reportHTML;
+
+        const checkinHTML = dayData && Object.keys(dayData).length > 0
+            ? `<button class="btn" style="margin-top:12px" onclick="editDay(${n})">✎ 修改这一天</button>`
+            : `<button class="btn" style="margin-top:12px" onclick="editDay(${n})">✿ 为这一天打卡</button>`;
+
+        document.getElementById('modalCheckinArea').innerHTML = checkinHTML;
+        document.getElementById('dayModal').classList.add('active');
+    }
+
+    function closeModal() { document.getElementById('dayModal').classList.remove('active'); }
+
+    function editDay(n) {
+        closeModal();
+        const d = load();
+        const dayData = d.days[n] || {};
+
+        // 打开日历标签，滚动到打卡表单
+        switchTab('calendar');
+        // 预填充今日打卡表单
+        if (n === getDay()) {
+            if (dayData.skills) {
+                for (const skillId of Object.keys(dayData.skills)) {
+                    const el = document.querySelector(`[data-skill="${skillId}"]`);
+                    if (el) el.classList.add('active');
+                }
+            }
+        }
+    }
+
+    function submitToday() {
+        const d = load();
+        const today = getDay();
+
+        const skills = {};
+        document.querySelectorAll('.skill-toggle.active').forEach(el => {
+            const skillId = el.dataset.skill;
+            if (!d.days[today]) d.days[today] = {};
+            if (!d.days[today].skills) d.days[today].skills = {};
+            d.days[today].skills[skillId] = (d.days[today].skills[skillId] || 0) + 3;
+            d.skills[skillId] = Math.min(100, (d.skills[skillId] || 0) + 3);
+
+            // 检查目标完成
+            checkGoalCompletion(skillId, d);
+        });
+
+        const weight = document.getElementById('quickWeight').value.trim();
+        const train = document.getElementById('quickTrain').value;
+        const note = document.getElementById('quickNote').value.trim();
+
+        if (!d.days[today]) d.days[today] = {};
+        if (!d.days[today].skills) d.days[today].skills = {};
+        Object.assign(d.days[today].skills, skills);
+        if (weight) { d.days[today].body = { ...(d.days[today].body || {}), weight: parseFloat(weight) }; d.body.weights.push({ t: fmt(), v: parseFloat(weight) }); }
+        if (train) { d.days[today].body = { ...(d.days[today].body || {}), train }; d.body.trainings.push({ t: fmt(), v: train }); }
+        if (note) d.days[today].note = note;
+
+        save(d);
+        renderContent();
+        alert(`Day ${today} 打卡完成！`);
+    }
+
+    function checkGoalCompletion(skillId, d) {
+        const skillGoals = GOALS.filter(g => g.skill === skillId);
+        for (const goal of skillGoals) {
+            if (!d.goals[goal.id] && d.skills[skillId] >= 10) {
+                d.goals[goal.id] = true;
+                // 弹技能卡
+                showSkillCard(goal);
+                break; // 一次只弹一个
+            }
+        }
+    }
+
+    function checkRewardEarned(rId, d) {
+        if (rId === 'r1') return d.goals['g1'];
+        if (rId === 'r2') return d.goals['g2'];
+        if (rId === 'r3') return d.goals['g3'];
+        if (rId === 'r4') return d.goals['g4'];
+        if (rId === 'r5') return d.goals['g5'];
+        if (rId === 'r6') return d.goals['g7'];
+        if (rId === 'r7') return d.goals['g8'];
+        if (rId === 'r8') return d.goals['g9'];
+        if (rId === 'r9') return d.goals['g10'];
+        if (rId === 'r10') return Object.keys(d.goals).length >= GOALS.length;
+        return false;
+    }
+
+    function showSkillCard(goal) {
+        const skill = SKILLS.find(s => s.id === goal.skill);
+        document.getElementById('skillCardIcon').textContent = skill.icon;
+        document.getElementById('skillCardTitle').textContent = goal.name;
+        document.getElementById('skillCardDesc').textContent = `已解锁新技能：${goal.desc}`;
+        document.getElementById('skillCardDate').textContent = `${new Date().toLocaleDateString('zh-CN')} 解锁`;
+        document.getElementById('skillCardModal').classList.add('active');
+    }
+
+    function closeSkillCard() { document.getElementById('skillCardModal').classList.remove('active'); }
+
+    function earnReward(rId) {
+        const d = load();
+        const reward = REWARDS.find(r => r.id === rId);
+        d.rewards[rId] = true;
+        save(d);
+
+        document.getElementById('rewardBigIcon').textContent = reward.icon;
+        document.getElementById('rewardBigTitle').textContent = reward.name;
+        document.getElementById('rewardBigDesc').textContent = `完成了${reward.condition}，奖励自己${reward.name.toLowerCase()}！`;
+        document.getElementById('rewardModal').classList.add('active');
+        renderContent();
+    }
+
+    function closeRewardModal() { document.getElementById('rewardModal').classList.remove('active'); }
+
+    function toggleGoal(gId) {
+        const d = load();
+        d.goals[gId] = !d.goals[gId];
+        save(d);
+        renderContent();
+    }
+
+    function openRelPanel() {
+        const d = load();
+        const relHTML = `
+            <div class="checkin-form" style="margin-top:20px;">
+                <div class="checkin-title">🌏 世界参与度</div>
+                <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;">
+                    <span class="skill-toggle" onclick="this.classList.toggle('active')">与自我</span>
+                    <span class="skill-toggle" onclick="this.classList.toggle('active')">与爱人</span>
+                    <span class="skill-toggle" onclick="this.classList.toggle('active')">与亲人</span>
+                    <span class="skill-toggle" onclick="this.classList.toggle('active')">与朋友</span>
+                    <span class="skill-toggle" onclick="this.classList.toggle('active')">与职场</span>
+                    <span class="skill-toggle" onclick="this.classList.toggle('active')">与远方</span>
+                </div>
+                <div class="field"><textarea id="relDiary" placeholder="今天在你的世界里，发生了什么？" style="min-height:80px;"></textarea></div>
+                <div class="field">
+                    <div style="display:flex;gap:8px;">
+                        <input type="text" id="relXHS" placeholder="小红书链接（可选）" style="flex:1;">
+                        <button onclick="saveRel()" style="padding:10px 14px;background:linear-gradient(135deg,#e07070,#e89090);border:none;border-radius:8px;color:white;font-size:11px;cursor:pointer;">关联</button>
+                    </div>
+                </div>
+                <button class="btn" onclick="saveRel()">🌏 记录</button>
+            </div>
+        `;
+        document.getElementById('contentArea').innerHTML = relHTML;
+    }
+
+    function saveRel() {
+        const d = load();
+        const diary = document.getElementById('relDiary')?.value?.trim();
+        const xhs = document.getElementById('relXHS')?.value?.trim();
+        if (!diary) return;
+        d.rels.unshift({ t: fmt(), diary, xhs });
+        save(d);
+        switchTab('calendar');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        renderContent();
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal(); closeSkillCard(); closeRewardModal(); } });
+        document.getElementById('dayModal').addEventListener('click', e => { if (e.target.id === 'dayModal') closeModal(); });
+    });
+    </script>
+</body>
+</html>
