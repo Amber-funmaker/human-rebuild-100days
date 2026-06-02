@@ -436,6 +436,7 @@
 
     const STORAGE_KEY = '***';
     const START = new Date('2026-06-01');
+    let _cleared = false;
 
     function getDay() {
         return Math.max(1, Math.floor((new Date() - START) / 86400000) + 1);
@@ -457,6 +458,13 @@
             days: {}, skills: {}, goals: {}, rewards: {}, rels: [],
             body: { weights:[], trainings:[], tongues:[] }
         };
+    }
+
+    // 消除已经有的所有打卡记录 - 页面加载时执行一次
+    function clearAllDataOnce() {
+        if (_cleared) return;
+        _cleared = true;
+        localStorage.removeItem(STORAGE_KEY);
     }
 
     function save(d) { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); }
@@ -603,10 +611,17 @@
             const isToday = i === today;
             const isFuture = i > today;
             let cls = '';
-            if (isDone) cls = 'done';
-            else if (isToday) cls = 'today';
-            else if (isFuture) cls = 'locked';
-            html += `<div class="day-cell ${cls}" onclick="openDay(${i})"><span class="day-num">${i}</span></div>`;
+            let dayLabel = i;
+            if (isDone) {
+                cls = 'done';
+                const d = new Date(START); d.setDate(d.getDate() + i - 1);
+                dayLabel = `${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+            } else if (isToday) {
+                cls = 'today';
+            } else if (isFuture) {
+                cls = 'locked';
+            }
+            html += `<div class="day-cell ${cls}" onclick="openDay(${i})"><span class="day-num">${dayLabel}</span></div>`;
         }
         return html;
     }
@@ -802,6 +817,7 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
+        clearAllDataOnce();
         renderContent();
         document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal(); closeSkillCard(); closeRewardModal(); } });
         document.getElementById('dayModal').addEventListener('click', e => { if (e.target.id === 'dayModal') closeModal(); });
