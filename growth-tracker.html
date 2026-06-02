@@ -614,8 +614,7 @@
             let dayLabel = i;
             if (isDone) {
                 cls = 'done';
-                const dt = new Date(START.getFullYear(), START.getMonth(), START.getDate() + i - 1);
-                dayLabel = `${String(dt.getMonth()+1).padStart(2,'0')}.${String(dt.getDate()).padStart(2,'0')}`;
+                dayLabel = d.days[i].date;
             } else if (isToday) {
                 cls = 'today';
             } else if (isFuture) {
@@ -632,8 +631,14 @@
         const d = load();
         const dayData = d.days[n] || {};
         const quote = CARRIE_QUOTES[(n - 1) % CARRIE_QUOTES.length];
-        const date = new Date(START.getFullYear(), START.getMonth(), START.getDate() + n - 1);
-        const dateStr = date.toLocaleDateString('zh-CN', { month:'long', day:'numeric', year:'numeric' });
+        let date, dateStr;
+        if (dayData.date) {
+            const [m, d] = dayData.date.split('.').map(Number);
+            date = new Date(START.getFullYear(), m - 1, d);
+        } else {
+            date = new Date(START.getFullYear(), START.getMonth(), START.getDate() + n - 1);
+        }
+        dateStr = date.toLocaleDateString('zh-CN', { month:'long', day:'numeric', year:'numeric' });
 
         document.getElementById('modalDay').textContent = `DAY ${n}`;
         document.getElementById('modalDate').textContent = dateStr;
@@ -721,6 +726,9 @@
         const note = document.getElementById('quickNote').value.trim();
 
         if (!d.days[target]) d.days[target] = {};
+        // 记录实际打卡日期
+        const now = new Date();
+        d.days[target].date = `${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')}`;
         if (!d.days[target].skills) d.days[target].skills = {};
         Object.assign(d.days[target].skills, skills);
         if (weight) { d.days[target].body = { ...(d.days[target].body || {}), weight: parseFloat(weight) }; d.body.weights.push({ t: fmt(), v: parseFloat(weight) }); }
