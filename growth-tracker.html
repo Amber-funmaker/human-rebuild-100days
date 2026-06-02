@@ -436,7 +436,7 @@
 
     const STORAGE_KEY = '***';
     const START = new Date('2026-06-01');
-    let _cleared = false;
+    const CLEARED_FLAG = '_growth_cleared_v1';
 
     function getDay() {
         return Math.max(1, Math.floor((new Date() - START) / 86400000) + 1);
@@ -460,11 +460,11 @@
         };
     }
 
-    // 消除已经有的所有打卡记录 - 页面加载时执行一次
+    // 消除已经有的所有打卡记录 - 只执行一次（持久标记）
     function clearAllDataOnce() {
-        if (_cleared) return;
-        _cleared = true;
+        if (localStorage.getItem(CLEARED_FLAG)) return;
         localStorage.removeItem(STORAGE_KEY);
+        localStorage.setItem(CLEARED_FLAG, '1');
     }
 
     function save(d) { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); }
@@ -689,17 +689,27 @@
         }
     }
 
+    // 找到最早未打卡的日期（从1开始，不超过今天）
+    function findNextDay(d, today) {
+        for (let i = 1; i <= today; i++) {
+            if (d.days[i] === undefined) return i;
+        }
+        return today;
+    }
+
     function submitToday() {
         console.log('[打卡] submitToday 被调用');
         const d = load();
         const today = getDay();
+        const target = findNextDay(d, today);
+        console.log('[打卡] today=' + today + ', 最早未打卡=' + target);
 
         const skills = {};
         document.querySelectorAll('.skill-toggle.active').forEach(el => {
             const skillId = el.dataset.skill;
-            if (!d.days[today]) d.days[today] = {};
-            if (!d.days[today].skills) d.days[today].skills = {};
-            d.days[today].skills[skillId] = (d.days[today].skills[skillId] || 0) + 3;
+            if (!d.days[target]) d.days[target] = {};
+            if (!d.days[target].skills) d.days[target].skills = {};
+            d.days[target].skills[skillId] = (d.days[target].skills[skillId] || 0) + 3;
             d.skills[skillId] = Math.min(100, (d.skills[skillId] || 0) + 3);
 
             // 检查目标完成
@@ -710,16 +720,16 @@
         const train = document.getElementById('quickTrain').value;
         const note = document.getElementById('quickNote').value.trim();
 
-        if (!d.days[today]) d.days[today] = {};
-        if (!d.days[today].skills) d.days[today].skills = {};
-        Object.assign(d.days[today].skills, skills);
-        if (weight) { d.days[today].body = { ...(d.days[today].body || {}), weight: parseFloat(weight) }; d.body.weights.push({ t: fmt(), v: parseFloat(weight) }); }
-        if (train) { d.days[today].body = { ...(d.days[today].body || {}), train }; d.body.trainings.push({ t: fmt(), v: train }); }
-        if (note) d.days[today].note = note;
+        if (!d.days[target]) d.days[target] = {};
+        if (!d.days[target].skills) d.days[target].skills = {};
+        Object.assign(d.days[target].skills, skills);
+        if (weight) { d.days[target].body = { ...(d.days[target].body || {}), weight: parseFloat(weight) }; d.body.weights.push({ t: fmt(), v: parseFloat(weight) }); }
+        if (train) { d.days[target].body = { ...(d.days[target].body || {}), train }; d.body.trainings.push({ t: fmt(), v: train }); }
+        if (note) d.days[target].note = note;
 
         save(d);
         renderContent();
-        alert(`Day ${today} 打卡完成！`);
+        alert(`Day ${target} 打卡完成！`);
     }
 
     function checkGoalCompletion(skillId, d) {
