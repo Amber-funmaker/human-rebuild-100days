@@ -614,8 +614,8 @@
             let dayLabel = i;
             if (isDone) {
                 cls = 'done';
-                const d = new Date(START); d.setDate(d.getDate() + i - 1);
-                dayLabel = `${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+                const dt = new Date(START); dt.setDate(dt.getDate() + i - 1);
+                dayLabel = `${String(dt.getMonth()+1).padStart(2,'0')}.${String(dt.getDate()).padStart(2,'0')}`;
             } else if (isToday) {
                 cls = 'today';
             } else if (isFuture) {
@@ -690,6 +690,7 @@
     }
 
     function submitToday() {
+        console.log('[打卡] submitToday 被调用');
         const d = load();
         const today = getDay();
 
