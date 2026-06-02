@@ -480,15 +480,16 @@
 
     function renderContent() {
         const d = load();
-        const day = getDay();
-        const phase = getPhase(day);
+        const checkedCount = Object.keys(d.days).length;
+        const today = checkedCount + 1;
+        const phase = getPhase(today);
 
         document.getElementById('phaseEra').textContent = phase.era;
         document.getElementById('phaseName').textContent = phase.title;
         document.getElementById('phaseQuote').textContent = phase.quote;
-        document.getElementById('dayLabel').textContent = `第 ${day} 天`;
-        document.getElementById('pctLabel').textContent = `${day}%`;
-        document.getElementById('progressFill').style.width = `${day}%`;
+        document.getElementById('dayLabel').textContent = `已打卡 ${checkedCount} / 100 天`;
+        document.getElementById('pctLabel').textContent = `${checkedCount}%`;
+        document.getElementById('progressFill').style.width = `${checkedCount}%`;
 
         const area = document.getElementById('contentArea');
 
@@ -499,7 +500,7 @@
                     <div class="legend-item"><div class="legend-dot today"></div><span>今天</span></div>
                     <div class="legend-item"><div class="legend-dot future"></div><span>未开始</span></div>
                 </div>
-                <div class="calendar-grid">${renderCalendarGrid(day, d)}</div>
+                <div class="calendar-grid">${renderCalendarGrid(today, d)}</div>
                 <div class="checkin-form" style="margin-top:20px;">
                     <div class="checkin-title">✿ 今日打卡</div>
                     <div class="skill-toggles">
@@ -626,7 +627,9 @@
     }
 
     function openDay(n) {
-        if (n > getDay()) return;
+        const d = load();
+        const today = Object.keys(d.days).length + 1;
+        if (n > today) return;
         const phase = getPhase(n);
         const d = load();
         const dayData = d.days[n] || {};
@@ -684,7 +687,7 @@
         // 打开日历标签，滚动到打卡表单
         switchTab('calendar');
         // 预填充今日打卡表单
-        if (n === getDay()) {
+        if (n === (Object.keys(load().days).length + 1)) {
             if (dayData.skills) {
                 for (const skillId of Object.keys(dayData.skills)) {
                     const el = document.querySelector(`[data-skill="${skillId}"]`);
@@ -705,7 +708,7 @@
     function submitToday() {
         console.log('[打卡] submitToday 被调用');
         const d = load();
-        const today = getDay();
+        const today = Object.keys(d.days).length + 1;
         const target = findNextDay(d, today);
         console.log('[打卡] today=' + today + ', 最早未打卡=' + target);
 
