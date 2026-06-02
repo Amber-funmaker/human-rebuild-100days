@@ -631,7 +631,6 @@
         const today = Object.keys(d.days).length + 1;
         if (n > today) return;
         const phase = getPhase(n);
-        const d = load();
         const dayData = d.days[n] || {};
         const quote = CARRIE_QUOTES[(n - 1) % CARRIE_QUOTES.length];
         let date, dateStr;
