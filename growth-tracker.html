@@ -614,7 +614,7 @@
             let dayLabel = i;
             if (isDone) {
                 cls = 'done';
-                const dt = new Date(START); dt.setDate(dt.getDate() + i - 1);
+                const dt = new Date(START.getFullYear(), START.getMonth(), START.getDate() + i - 1);
                 dayLabel = `${String(dt.getMonth()+1).padStart(2,'0')}.${String(dt.getDate()).padStart(2,'0')}`;
             } else if (isToday) {
                 cls = 'today';
@@ -632,7 +632,7 @@
         const d = load();
         const dayData = d.days[n] || {};
         const quote = CARRIE_QUOTES[(n - 1) % CARRIE_QUOTES.length];
-        const date = new Date(START); date.setDate(date.getDate() + n - 1);
+        const date = new Date(START.getFullYear(), START.getMonth(), START.getDate() + n - 1);
         const dateStr = date.toLocaleDateString('zh-CN', { month:'long', day:'numeric', year:'numeric' });
 
         document.getElementById('modalDay').textContent = `DAY ${n}`;
